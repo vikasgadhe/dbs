@@ -1,69 +1,19 @@
+**Task:** Given an SQL query, create a script that extracts information about the query. The script should analyze the query and display the following details:
 
-```python
-import streamlit as st
-import pandas as pd
-from azure.ai.textanalytics import TextAnalyticsClient
-from azure.core.credentials import AzureKeyCredential
-from sql_metadata import Parser
+1. **Columns:** Extract and display the column names involved in the SELECT statement of the query.
 
-# Function to analyze sentiment using Azure Text Analytics
-def analyze_sentiment(text, api_key, endpoint):
-    credential = AzureKeyCredential(api_key)
-    text_analytics_client = TextAnalyticsClient(endpoint=endpoint, credential=credential)
-    
-    documents = [text]
-    response = text_analytics_client.analyze_sentiment(documents=documents)[0]
+2. **Tables:** Extract and display the table names mentioned in the FROM clause of the query.
 
-    return response.sentiment
+3. **Filters:** Extract and display any filters specified in the WHERE clause of the query.
 
-# Function to extract SQL query information
-def extract_sql_info(query):
-    parsed_info = Parser(query)
-    source_table = parsed_info.tables
-    columns = parsed_info.columns
-    filters = parsed_info.where
+**Instructions:**
+- Implement a function to extract the required information: columns, tables, and filters.
 
-    return source_table, columns, filters
+- Display the extracted information clearly.
+- Provide a downloadable CSV file containing the extracted information.
 
-# Streamlit app
-def main():
-    st.title("SQL Query Analyzer")
+**Example:**
 
-    # Upload SQL file
-    uploaded_file = st.file_uploader("Choose a file", type=["sql"])
-
-    if uploaded_file is not None:
-        # Read content of the file
-        sql_query = uploaded_file.read()
-
-        # Display SQL query
-        st.subheader("SQL Query:")
-        st.code(sql_query, language='sql')
-
-        # Analyze sentiment of the SQL query
-        api_key = "YOUR_AZURE_TEXT_ANALYTICS_KEY"
-        endpoint = "YOUR_AZURE_TEXT_ANALYTICS_ENDPOINT"
-        sentiment = analyze_sentiment(sql_query, api_key, endpoint)
-
-        # Display sentiment
-        st.subheader("Sentiment Analysis:")
-        st.write(f"The sentiment of the SQL query is: {sentiment}")
-
-        # Extract information from SQL query
-        source_table, columns, filters = extract_sql_info(sql_query)
-
-        # Create DataFrame
-        data = {'Source Table': source_table, 'Columns': columns, 'Filters': filters}
-        df = pd.DataFrame(data)
-
-        # Display results
-        st.subheader("Query Information:")
-        st.dataframe(df)
-
-        # Save results to CSV
-        csv_file = df.to_csv(index=False)
-        st.download_button("Download CSV", csv_file, "sql_query_info.csv", key='csv_button')
-
-if __name__ == "__main__":
-    main()
-```
+Consider the following SQL query:
+```sql
+SELECT FirstName, LastName FROM Customers WHERE Country = 'USA';
