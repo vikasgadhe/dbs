@@ -69,3 +69,55 @@ for i in range(len(source_tables)):
 # Print the spreadsheet
 for row in spreadsheet:
     print(row)
+========================\\
+you are a business analyst. You help people to understand source to target mapping with filters. You also provide the output in structured spreadsheet format. 
+Analyze each SQL and provide source to target mapping from given SQL. now, present the output in spreadsheet with identified source tables in 1st column, identified attributes/columns in 2nd column, identified filters in 3rd column. The output should have distinct data.
+Write a code for above use case using RAG(using load,split,store and retrieve) which takes text file containing sql as input using azure open studio.
+
+import re
+import csv
+
+# Load the text file containing the SQL queries
+with open('sql_queries.txt', 'r') as f:
+    sql_queries = f.readlines()
+
+# Split the SQL queries into individual statements
+sql_statements = []
+for sql_query in sql_queries:
+    sql_statements.extend(re.split(';', sql_query))
+
+# Store the source to target mapping in a dictionary
+source_to_target_mapping = {}
+for sql_statement in sql_statements:
+    source_tables = []
+    target_tables = []
+    filters = []
+
+    # Identify the source tables
+    for match in re.finditer('FROM\s+([a-zA-Z0-9_]+)', sql_statement):
+        source_tables.append(match.group(1))
+
+    # Identify the target tables
+    for match in re.finditer('INSERT\s+INTO\s+([a-zA-Z0-9_]+)', sql_statement):
+        target_tables.append(match.group(1))
+
+    # Identify the filters
+    for match in re.finditer('WHERE\s+([a-zA-Z0-9_]+)\s*=\s*([a-zA-Z0-9_]+)', sql_statement):
+        filters.append((match.group(1), match.group(2)))
+
+    # Store the source to target mapping
+    source_to_target_mapping[sql_statement] = {
+        'source_tables': source_tables,
+        'target_tables': target_tables,
+        'filters': filters
+    }
+
+# Retrieve the source to target mapping in a structured spreadsheet format
+with open('source_to_target_mapping.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Source Table', 'Target Table', 'Filter'])
+    for sql_statement, mapping in source_to_target_mapping.items():
+        for source_table in mapping['source_tables']:
+            for target_table in mapping['target_tables']:
+                for filter in mapping['filters']:
+                    writer.writerow([source_table, target_table, filter])
