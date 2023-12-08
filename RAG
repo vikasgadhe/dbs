@@ -1,0 +1,71 @@
+google 
+
+import azure.cognitiveservices.speech as speechsdk
+import azure.cognitiveservices.textanalytics as textanalytics
+import azure.cognitiveservices.luis.authoring as luisauthoring
+import azure.cognitiveservices.luis.runtime as luisruntime
+import azure.cognitiveservices.qnamaker as qnamaker
+import azure.cognitiveservices.search.bing as bingsearch
+
+# Create a speech recognizer
+speech_config = speechsdk.SpeechConfig(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION")
+speech_recognizer = speechsdk.SpeechRecognizer(speech_config)
+
+# Create a text analytics client
+text_analytics_config = textanalytics.TextAnalyticsClient(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION")
+
+# Create a LUIS authoring client
+luis_authoring_config = luisauthoring.LuisAuthoringClient(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION")
+
+# Create a LUIS runtime client
+luis_runtime_config = luisruntime.LuisRuntimeClient(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION", app_id="YOUR_APP_ID")
+
+# Create a Q&A Maker client
+qna_maker_config = qnamaker.QnaMakerClient(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION", knowledge_base_id="YOUR_KNOWLEDGE_BASE_ID")
+
+# Create a Bing search client
+bing_search_config = bingsearch.SearchClient(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION")
+
+# Load the text file
+with open("input.txt", "r") as f:
+    text = f.read()
+
+# Split the text into sentences
+sentences = text.split(".")
+
+# Store the sentences in a list
+sentences_list = []
+for sentence in sentences:
+    sentences_list.append(sentence)
+
+# Retrieve the source tables, attributes, and filters from each sentence
+source_tables = []
+attributes = []
+filters = []
+for sentence in sentences_list:
+    # Split the sentence into tokens
+    tokens = sentence.split(" ")
+
+    # Identify the source table
+    source_table = tokens[0]
+
+    # Identify the attribute
+    attribute = tokens[1]
+
+    # Identify the filter
+    filter = tokens[2]
+
+    # Add the source table, attribute, and filter to the list
+    source_tables.append(source_table)
+    attributes.append(attribute)
+    filters.append(filter)
+
+# Store the source tables, attributes, and filters in a spreadsheet
+spreadsheet = []
+for i in range(len(source_tables)):
+    row = [source_tables[i], attributes[i], filters[i]]
+    spreadsheet.append(row)
+
+# Print the spreadsheet
+for row in spreadsheet:
+    print(row)
