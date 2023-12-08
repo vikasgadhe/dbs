@@ -1,1 +1,40 @@
 you are a business analyst. You help people to understand source to target mapping with filters. You also provide the output in structured spreadsheet format. Analyze each SQL and provide source to target mapping from given SQL. now, present the output in spreadsheet with identified source tables in 1st column, identified attributes/columns in 2nd column, identified filters in 3rd column. The output should have distinct data. Write a code for above use case using LLM which takes text file as input using azure open studio.
+
+import azure.cognitiveservices.speech as speechsdk
+
+# Set up the speech service client
+speech_config = speechsdk.SpeechConfig(subscription="YOUR_SUBSCRIPTION_KEY", region="YOUR_REGION")
+speech_client = speechsdk.SpeechRecognizer(speech_config)
+
+# Read the text file
+with open("input.txt", "r") as f:
+    text = f.read()
+
+# Recognize the speech
+speech_recognition_result = speech_client.recognize_once(text)
+
+# Get the source tables
+source_tables = []
+for entity in speech_recognition_result.entities:
+    if entity.type == "Table":
+        source_tables.append(entity.text)
+
+# Get the attributes/columns
+attributes = []
+for entity in speech_recognition_result.entities:
+    if entity.type == "Column":
+        attributes.append(entity.text)
+
+# Get the filters
+filters = []
+for entity in speech_recognition_result.entities:
+    if entity.type == "Filter":
+        filters.append(entity.text)
+
+# Write the output to a spreadsheet
+with open("output.csv", "w") as f:
+    f.write("Source Table,Attribute/Column,Filter\n")
+    for source_table in source_tables:
+        for attribute in attributes:
+            for filter in filters:
+                f.write(f"{source_table},{attribute},{filter}\n")
