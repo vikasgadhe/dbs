@@ -38,3 +38,44 @@ with open("output.csv", "w") as f:
         for attribute in attributes:
             for filter in filters:
                 f.write(f"{source_table},{attribute},{filter}\n")
+
+======================
+chatgpt
+
+import pandas as pd
+from azureml.core import Workspace, Experiment, Run
+
+# Load SQL query from a text file
+with open("path/to/sql_query.txt", "r") as file:
+    sql_query = file.read()
+
+# Assume the SQL query is stored in a text file, and you've loaded it into the 'sql_query' variable
+
+# Function to parse SQL query and extract source-to-target mapping
+def parse_sql_query(sql_query):
+    # Placeholder function for parsing SQL query
+    # In a real-world scenario, you would need to use a SQL parser library or regex to extract relevant information
+
+    # Sample source-to-target mapping (modify based on your SQL query)
+    source_to_target_mapping = [
+        {'source_table': 'employees', 'source_column': 'employee_id', 'filter': None},
+        {'source_table': 'employees', 'source_column': 'first_name', 'filter': None},
+        {'source_table': 'employees', 'source_column': 'last_name', 'filter': None},
+        {'source_table': 'employees', 'source_column': 'salary', 'filter': '> 50000'},
+        {'source_table': 'departments', 'source_column': 'department_name', 'filter': None}
+    ]
+
+    return source_to_target_mapping
+
+# Parse SQL query and get source-to-target mapping
+source_to_target_mapping = parse_sql_query(sql_query)
+
+# Create a DataFrame for the output
+output_df = pd.DataFrame(source_to_target_mapping, columns=['Source Table', 'Source Column', 'Filter'])
+
+# Save the DataFrame to a CSV file
+output_df.to_csv("path/to/output_mapping.csv", index=False)
+
+# Output the DataFrame
+output_df
+
