@@ -1,0 +1,26 @@
+import pandas as pd
+from itertools import chain
+
+# Read the CSV file into a Pandas DataFrame
+csv_file_path = 'path/to/your/csv_file.csv'
+df = pd.read_csv(csv_file_path)
+
+# Split values in the 'Source Attribute' column into separate rows
+df['Source Attribute'] = df['Source Attribute'].str.split(', ')
+df_long = df.explode('Source Attribute')
+
+# Drop the original 'Source Attribute' column
+df_long.drop('Source Attribute', axis=1, inplace=True)
+
+# Rename columns and remove leading/trailing whitespaces
+df_long.columns = [col.strip() for col in df_long.columns]
+
+# Display the modified DataFrame (optional)
+print("Modified DataFrame:")
+print(df_long)
+
+# Save the modified DataFrame to a new CSV file
+tabular_csv_file_path = 'path/to/output/tabular_format.csv'
+df_long.to_csv(tabular_csv_file_path, index=False)
+
+print(f"\nTabular format saved to: {tabular_csv_file_path}")
