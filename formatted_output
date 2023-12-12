@@ -24,3 +24,66 @@ tabular_csv_file_path = 'path/to/output/tabular_format.csv'
 df_long.to_csv(tabular_csv_file_path, index=False)
 
 print(f"\nTabular format saved to: {tabular_csv_file_path}")
+==================
+google bard
+
+import streamlit as st
+import openai
+
+# Set your OpenAI API key
+OPENAI_API_KEY = "YOUR_OPENAI_KEY"
+
+# Function to parse SQL using Codex
+def parse_sql_with_codex(query):
+    response = openai.CompletionRequest(
+        model="code-davinci-002",
+        prompt=f"Parse the following SQL query and extract source tables, target columns, and filters: {query}",
+        temperature=0.7,
+        log_probs=True,
+    )
+    completion = openai.OpenAI(OPENAI_API_KEY).complete(response)
+    # Extract data from Codex response (implement extract_data_from_response() function)
+    source_tables, target_columns, filters = extract_data_from_response(completion)
+    return source_tables, target_columns, filters
+
+# Function to generate spreadsheet download code using Codex
+def generate_spreadsheet_download_code(parsed_data):
+    prompt = f"Based on the following data (provide parsed_data), please write Python code to generate a downloadable spreadsheet with columns for source table, target column, and filter. Ensure duplicate entries are removed before generating the spreadsheet."
+    response = openai.CompletionRequest(
+        model="code-davinci-002",
+        prompt=prompt,
+        temperature=0.7,
+        log_probs=True,
+    )
+    completion = openai.OpenAI(OPENAI_API_KEY).complete(response)
+    # Extract and execute the generated code for downloading the spreadsheet
+    download_code = completion.choices[0].text
+    exec(download_code)
+
+# Main application logic
+def main():
+    st.title("SQL Query Analysis")
+    uploaded_file = st.file_uploader("Upload SQL file:", accept_types=["txt"])
+    if uploaded_file:
+        # Read the uploaded file
+        sql_queries = uploaded_file.read().decode("utf-8").splitlines()
+        # Analyze each query
+        parsed_data = []
+        for query in sql_queries:
+            source_tables, target_columns, filters = parse_sql_with_codex(query)
+            parsed_data.append({
+                "source_tables": source_tables,
+                "target_columns": target_columns,
+                "filters": filters,
+            })
+        # Display parsed data in Streamlit table
+        st.dataframe(parsed_data)
+
+        # Generate and execute download code for spreadsheet
+        download_code = generate_spreadsheet_download_code(parsed_data)
+        download_button_label = "Download Spreadsheet"
+        st.download_button(download_button_label, download_code, file_name="parsed_data.xlsx")
+
+if __name__ == "__main__":
+    main()
+
