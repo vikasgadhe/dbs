@@ -86,4 +86,37 @@ def main():
 
 if __name__ == "__main__":
     main()
+===================
+
+def extract_data_from_response(completion):
+    # Access the completion text
+    text = completion.choices[0].text
+
+    # Extract source tables
+    source_tables_regex = r"Source tables: (.*)"
+    match = re.search(source_tables_regex, text, re.IGNORECASE)
+    source_tables = []
+    if match:
+        source_tables = [t.strip() for t in match.group(1).split(",")]
+
+    # Extract target columns
+    target_columns_regex = r"Target columns: (.*)"
+    match = re.search(target_columns_regex, text, re.IGNORECASE)
+    target_columns = []
+    if match:
+        target_columns = [t.strip() for t in match.group(1).split(",")]
+
+    # Extract filters
+    filters_regex = r"Filters: (.*)"
+    match = re.search(filters_regex, text, re.IGNORECASE)
+    filters = []
+    if match:
+        filters = [f.strip() for f in match.group(1).split(",")]
+
+    # Remove duplicate entries
+    source_tables = list(set(source_tables))
+    target_columns = list(set(target_columns))
+    filters = list(set(filters))
+
+    return source_tables, target_columns, filters
 
