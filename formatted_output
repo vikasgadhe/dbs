@@ -119,4 +119,77 @@ def extract_data_from_response(completion):
     filters = list(set(filters))
 
     return source_tables, target_columns, filters
+===================================
+
+import streamlit as st
+from openai import Chat
+
+# Initialize OpenAI chat
+chat = Chat.from_api_key(YOUR_OPENAI_KEY)
+
+# Function to interact with chat and generate code snippets
+def get_code_snippet(prompt):
+    response = chat.complete(prompt)
+    # Extract and return the generated code snippet
+    return response.choices[0].text
+
+# Streamlit application logic
+st.title("SQL Query Analysis")
+
+uploaded_file = st.file_uploader("Upload SQL file:", accept_types=["txt"])
+
+if uploaded_file:
+    # Read the uploaded file
+    sql_queries = uploaded_file.read().decode("utf-8").splitlines()
+
+    # Initialize empty dictionary for storing parsed data (key: query, value: extracted elements)
+    parsed_data_dict = {}
+
+    for query in sql_queries:
+        # Prompt chat to parse the query and extract elements
+        prompt = f"Parse the following SQL query and extract source tables, attributes/columns, and filters, ensuring no duplicates: {query}"
+        source_tables, attribute_column, filter = get_code_snippet(prompt).strip().split(", ")
+
+        # Store extracted elements in a dictionary (key: query, value: set of elements)
+        parsed_data_dict.setdefault(query, set()).update({
+            "source_tables": source_tables, 
+            "attribute_column": attribute_column, 
+            "filter": filter,
+        })
+
+    # Combine extracted elements from all queries into a single dictionary
+    combined_parsed_data = {}
+    for query, elements in parsed_data_dict.items():
+        combined_parsed_data.update({
+            query: {key: list(value) for key, value in elements.items()}
+        })
+
+    # Convert parsed data to a list of dictionaries suitable for Streamlit table
+    table_data = []
+    for query, elements in combined_parsed_data.items():
+        for source_table in elements["source_tables"]:
+            for attribute_column in elements["attribute_column"]:
+                for filter in elements["filter"]:
+                    table_data.append({
+                        "Query": query,
+                        "Source_Table": source_table,
+                        "Attribute/Column": attribute_column,
+                        "Filter": filter,
+                    })
+
+    # Display parsed data in Streamlit table
+    st.dataframe(table_data)
+
+    # Download option (implement download_code_snippet function using chat)
+    download_code_snippet = get_code_snippet("Generate Python code to download the parsed data as a spreadsheet with no duplicates")
+    st.download_button("Download Spreadsheet", download_code_snippet, file_name="parsed_data.xlsx")
+===
+download_code_snippet = get_code_snippet(combined_parsed_data)
+exec(download_code_snippet)
+
+# Download the generated spreadsheet
+st.download_button("Download Spreadsheet", downloaded_data, file_name="parsed_data.xlsx")
+
+
+
 
