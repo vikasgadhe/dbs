@@ -184,11 +184,13 @@ if uploaded_file:
     download_code_snippet = get_code_snippet("Generate Python code to download the parsed data as a spreadsheet with no duplicates")
     st.download_button("Download Spreadsheet", download_code_snippet, file_name="parsed_data.xlsx")
 ===
-download_code_snippet = get_code_snippet(combined_parsed_data)
-exec(download_code_snippet)
+def download_code_snippet(parsed_data):
+    # Prompt OpenAI chat to generate download code
+    prompt = f"Based on the following parsed data (provide parsed_data dictionary), please generate Python code to download the information as a spreadsheet with columns for 'Query', 'Source_Table', 'Attribute/Column', and 'Filter'. Ensure duplicate entries are removed before generating the spreadsheet. You can choose any suitable library for creating and downloading the spreadsheet (e.g., openpyxl)."
+    response = chat.complete(prompt)
+    # Extract and return the generated code snippet
+    return response.choices[0].text
 
-# Download the generated spreadsheet
-st.download_button("Download Spreadsheet", downloaded_data, file_name="parsed_data.xlsx")
 
 
 
