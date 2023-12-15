@@ -63,4 +63,60 @@ if uploaded_file is not None:
         st.download_button("Download CSV", final, file_name=f"{myscriptname}.csv")
     except Exception as e:
         st.error(f"Error processing data: {e}")
+========================
+
+import streamlit as st
+import pandas as pd
+import json
+from io import StringIO
+from openai.azure import AzureOpenAI
+
+# Initialize OpenAI client
+client = AzureOpenAI(
+    api_key="**********************",
+    api_version="2023-09-15-preview",
+    azure_endpoint="https://openai-pcs-az-cr10001-nab.openai.azure.com/",
+)
+
+# Streamlit title and file upload
+st.title("Data Lineage: SQL Analyzer")
+uploaded_file = st.file_uploader("Upload SQL file:", type=["txt"])
+
+# Process uploaded file (if any)
+if uploaded_file is not None:
+    # Read file content as string
+    stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+    code_input = stringio.read().strip()
+
+    # Define function to analyze SQL query
+    def analyze_sql(input_code):
+        role = "You are a helpful Business Analyst. I analyze SQL queries and extract all source tables, columns, and filters applied. Ensure all lists have the same length. Here's the output format: [""Source Table: plants p"", ""Columns and Filters:t.type='Indoor'""]."
+        SQLprompt = f"Analyze the below SQL: \n\n {input_code} and extract each source table, source column with filter conditions if any used in the SQL. Ensure all source tables, columns, and filters lists have the same length. Create the output in JSON format."
+
+        # Send request to OpenAI and process response
+        response = client.chat.completions.create(
+            model="gpt-35-turbo",
+            messages=[
+                {"role": "system", "content": role},
+                {"role": "user", "content": SQLprompt},
+            ],
+            temperature=0.8,
+        )
+        return json.loads(response.choices[0].message.content)
+
+    # Analyze SQL and store results
+    output_data = analyze_sql(code_input)
+
+    # Download response as JSON file
+    st.download_button("Download JSON", data=json.dumps(output_data, indent=4), file_name="sql_analysis.json")
+
+    # Convert JSON to DataFrame and download as CSV (optional)
+    # You can modify this section based on your needs
+    df = pd.DataFrame(output_data)
+    final = df.to_csv(f"sql_analysis.csv", index=False)
+    st.download_button("Download CSV", final, file_name="sql_analysis.csv")
+
+else:
+    st.info("Please upload an SQL file for analysis.")
+
 
