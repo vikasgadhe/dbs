@@ -118,5 +118,25 @@ if uploaded_file is not None:
 
 else:
     st.info("Please upload an SQL file for analysis.")
+====================================================================
+def analyze_sql(input_code):
+    # ... your existing code ...
+    try:
+        output_data = json.loads(response.choices[0].message.content)
+    except Exception as e:
+        # Handle error and return empty dictionary
+        st.error(f"Error analyzing SQL: {e}")
+        return {}
+
+    # ... your existing code ...
+
+# Download section
+try:
+    st.download_button("Download JSON", data=json.dumps(output_data, indent=4), file_name="sql_analysis.json")
+    df = pd.DataFrame(output_data)
+    final = df.to_csv(f"sql_analysis.csv", index=False)
+    st.download_button("Download CSV", final, file_name="sql_analysis.csv")
+except Exception as e:
+    st.error(f"Error downloading analysis: {e}")
 
 
