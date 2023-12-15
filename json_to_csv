@@ -1,0 +1,56 @@
+import streamlit as st
+import pandas as pd
+import json
+from io import StringIO
+from openai.azure import AzureOpenAI
+
+# Initialize OpenAI client
+client = AzureOpenAI(
+    api_key="**********************",
+    api_version="2023-09-15-preview",
+    azure_endpoint="https://openai-pcs-az-cr10001-nab.openai.azure.com/",
+)
+
+# Streamlit title and file upload
+st.title("Data Lineage: Code Explainer")
+uploaded_file = st.file_uploader("Upload a file:", type=["txt"])
+
+# Process uploaded file (if any)
+if uploaded_file is not None:
+    # Read file content as string
+    stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+    code_input = stringio.read()
+
+    # Get uploaded file name for later use
+    myscriptname = uploaded_file.name
+
+    # Define function to explain code using OpenAI Codex
+    def explain_code(input_code):
+        role = "You are a helpful Business Analyst. You analyze SQL queries and extract each and every source table, source column with filter conditions if any used in the SQL in json. You are intelligent to remove duplicate source tables, columns, filters from the output and provide clean data. Here is your json output format: [""Source Table:plants p"", ""Columns and Filters:t.type='Indoor'""]."
+
+        # Format SQL prompt
+        SQLprompt = f"Analyze the below SQL: \n\n{code_input} and extract each and every source table, source column and source filters applied. Create the output in json format. For Example: If the SQL text is ""Select p.plant_id as p_plant_id,f.plant_id as f_plant_id, NVL(p.color,'") as p_color from plants p, family f where p.plant_id = f.plant_id and f.family = 'Calathia'"" then the extact source tables will be plants p, family f and source columns and filters applied will be p.plant_id,f.plant_id,p.color,f.family ='Calathia'. Here is your json output format: [""Source Table:plants p"", ""Columns and Filters:t.type="Indoor"""],"
+
+        # Send request to OpenAI and process response
+        response = client.chat.completions.create(
+            model="gpt-35-turbo",
+            messages=[
+                {"role": "system", "content": role},
+                {"role": "user", "content": SQLprompt},
+            ],
+            temperature=0.8,
+        )
+        return response.choices[0].message.content
+
+    # Analyze uploaded code and store results
+    output_data = explain_code(code_input)
+
+    # Download response as JSON file
+    st.download_button("Download JSON", data=output_data, file_name=f"{myscriptname}.json")
+
+    # Convert JSON to DataFrame and download as CSV (optional)
+    # You can modify this section based on your needs
+    # df = pd.read_json(StringIO(output_data))
+    # final = df.to_csv(f"{myscriptname}.csv", index=False)
+    # st.download_button("Download CSV", final, file_name=f"{myscriptname}.csv")
+
