@@ -78,4 +78,38 @@ output_df.to_csv("path/to/output_mapping.csv", index=False)
 
 # Output the DataFrame
 output_df
+=======================
+ role = '''You are a helpful Business Analyst. You analyze SQL queries and extract each and every source table, source column and filter conditions if any used in the SQL in json. Please ensure all source tables, columns, and filters lists have the same length. Here is your json output format:
+        {
+  "source_tables": [
+    "plants p",
+    "family f",
+    "type t"
+  ],
+  "source_columns": [
+    "p.group_id",
+    "p.name",
+    "p.color",
+    "f.group_id",
+    "f.group_name",
+    "t.type",
+    "p.date"
+  ],
+  "source_filters": [
+    "p.id = f.id",
+    "p.id = t.id",
+    "p.group_id between 1 and 10",
+    "t.type = 'Indoor'",
+    "p.name like 'S%'",
+    "p.name like 'Q%'"
+  ]
+}.'''
+
+        # Format SQL prompt with emphasis on consistent lengths
+        SQLprompt = f"""Analyze the below SQL: \n\n {code_input} and extract each and every source table, source column and source filters applied. Ensure all source tables, columns, and filters lists have the same length. Create the output in json format. For Example: If the SQL text is ""SELECT p.name, f.color, t.type, CASE WHEN f.color ='Maroon' THEN 'My Choice' ELSE 'Your Choice' END choice  
+        FROM plants p, family f, type t  
+        WHERE p.id = f.id AND p.id = t.id AND t.type = 'Indoor' AND p.name LIKE 'S%';
+        then the extact source tables will be plants p, family f,type t and source columns will be p.name,f.color,t.type and filters applied will be p.name LIKE 'S%',t.type = 'Indoor'."""
+
+        # Send request to OpenAI and process response
 
