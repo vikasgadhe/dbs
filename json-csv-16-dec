@@ -1,86 +1,49 @@
 import streamlit as st
-import pandas as pd
+import re
 import json
-from io import StringIO
-from openai.azure import AzureOpenAI
 
-# Initialize OpenAI client
-client = AzureOpenAI(
-    api_key="**********************",
-    api_version="2023-09-15-preview",
-    azure_endpoint="https://openai-pcs-az-cr10001-nab.openai.azure.com/",
-)
+def analyze_sql(sql_query):
+    # Regular expression patterns for extracting source tables, columns, and filters
+    table_pattern = re.compile(r'\bFROM\s+(\w+(\s+\w+)?)(\s*,\s*\w+(\s+\w+)?)?\b', re.IGNORECASE)
+    column_pattern = re.compile(r'\bSELECT\s+([\w.,\s]+)\b', re.IGNORECASE)
+    filter_pattern = re.compile(r'\bWHERE\s+(.+)\b', re.IGNORECASE)
 
-# Streamlit title and file upload
-st.title("SQL Query Analyzer")
-uploaded_file = st.file_uploader("Upload SQL file:", type=["txt"])
+    # Extract source tables, columns, and filters
+    source_tables = table_pattern.findall(sql_query)
+    source_columns = column_pattern.findall(sql_query)
+    source_filters = filter_pattern.findall(sql_query)
 
-# Process uploaded file (if any)
-if uploaded_file is not None:
-    # Read file content as string
-    stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-    code_input = stringio.read().strip()
+    # Flatten lists and remove duplicates
+    source_tables = list(set(item.strip() for sublist in source_tables for item in sublist if item))
+    source_columns = list(set(item.strip() for sublist in source_columns for item in sublist.split(',')))
+    source_filters = list(set(item.strip() for sublist in source_filters for item in sublist.split('AND')))
 
-    # Define function to analyze SQL query
-    def analyze_sql(input_code):
-        # Set role and format SQL prompt
-        role = "I'm a helpful AI assistant. Ask me anything about your SQL queries!"
-        SQLprompt = f"""Let's analyze the following SQL query: \n\n {input_code}
+    # Create JSON output
+    output_json = {
+        "source_tables": source_tables,
+        "source_columns": source_columns,
+        "source_filters": source_filters
+    }
 
-Please provide me with the source tables, columns, and any filters used in the query. I'll ensure all lists have the same length and present the results in a clear format.
+    return json.dumps(output_json, indent=2)
 
-For example, if the query is:
+def main():
+    st.title("SQL Query Analyzer")
 
-```sql
-SELECT p.name, f.color, t.type
-FROM plants p, family f, type t
-WHERE p.id = f.id AND p.id = t.id AND t.type = 'Indoor' AND p.name LIKE 'S%';
+    # Get SQL query from user
+    code_input = st.text_area("Enter SQL Query:")
+    
+    # Analyze button
+    if st.button("Analyze SQL"):
+        if code_input:
+            # Analyze the SQL query
+            result = analyze_sql(code_input)
 
-{
-"source_tables": ["plants p", "family f", "type t"],
-"source_columns": ["p.name", "f.color", "t.type"],
-"source_filters": ["p.id = f.id", "p.id = t.id", "t.type = 'Indoor'", "p.name LIKE 'S%'"]
-}
+            # Display the result
+            st.header("Analysis Result (JSON):")
+            st.json(result)
+        else:
+            st.warning("Please enter a SQL query.")
 
-
-Ready to get started? Ask away!
-"""
-
-        # Send request to OpenAI and process response
-        response = client.chat.completions.create(
-            model="gpt-35-turbo",
-            messages=[
-                {"role": "system", "content": role},
-                {"role": "user", "content": SQLprompt},
-            ],
-            temperature=0.8,
-        )
-        return json.loads(response.choices[0].message.content)
-
-    # Analyze SQL and store results
-    output_data = analyze_sql(code_input)
-
-    # Download response as JSON file
-    st.download_button("Download JSON", data=json.dumps(output_data, indent=4), file_name="sql_analysis.json")
-
-    # Convert JSON to DataFrame and download as CSV (optional)
-    # You can modify this section based on your needs
-    df = pd.DataFrame(output_data)
-    final = df.to_csv(f"sql_analysis.csv", index=False)
-    st.download_button("Download CSV", final, file_name="sql_analysis.csv")
-
-else:
-    st.info("Please upload an SQL file for analysis.")
-
-
-
-**Changes:**
-
-* Removed potentially sensitive information and biased language.
-* Focused on user-friendly instructions and clear prompts.
-* Emphasized the purpose of the code and its output format.
-* Avoided mentioning specific examples that might raise concerns.
-
-This code provides a safe and ethical way to analyze SQL queries with OpenAI and Streamlit. Remember to use OpenAI responsibly and avoid sharing sensitive information or discriminatory content.
-
-Feel free to ask if you have any further questions or need help customizing the code for specific needs.
+if __name__ == "__main__":
+    main()
