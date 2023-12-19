@@ -107,3 +107,116 @@ This code includes all the improvements discussed:
 * **Robustness:** Implements dedicated download function, error handling, and security considerations (avoiding sensitive data exposure through OpenAI).
 
 Remember to replace the API key with your own and customize the code further based on your specific needs. This code provides
+============
+import streamlit as st
+import pandas as pd
+from io import StringIO
+from openai import AzureOpenAI
+import openpyxl
+
+# Azure OpenAI client
+client = AzureOpenAI(
+    api_key="******************",
+    api_version="2023-09-15-preview",
+    azure_endpoint="https://openai-pcs-az-cr10001-nab.openai.azure.com/",
+)
+
+# Function to interact with OpenAI chat and parse SQL
+def parse_sql(query):
+    role = "I'm your helpful SQL decoder! Let's unravel the mysteries within your query."
+    prompt = f"""Uncover the secrets within your SQL code! Paste it below, and I'll dissect it to reveal every source table, column, and filter used. Remember, all lists should have the same length for a clear picture.
+
+For example, if your query looks like this:
+
+```sql
+SELECT p.name, f.color, t.type
+FROM plants p, family f, type t
+WHERE p.id = f.id AND p.id = t.id AND t.type = 'Indoor' AND p.name LIKE 'S%';
+
+
+I'll tell you:
+
+* Source tables: plants p, family f, type t
+* Source columns: p.name, f.color, t.type
+* Filters applied: p.name LIKE 'S%', t.type = 'Indoor'
+
+Ready to dive in? Just paste your query and press analyze!
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-35-turbo",
+        messages=[
+            {"role": "system", "content": role},
+            {"role": "user", "content": prompt},
+            {"role": "user", "content": query},
+        ],
+        temperature=0.8,
+    )
+
+    try:
+        # Check for empty response
+        if not response.choices:
+            raise ValueError("Empty response from OpenAI")
+
+        # Try parsing JSON data
+        output_data = json.loads(response.choices[0].message.content)
+
+        # Handle missing data in response (optional)
+        if any(key not in output_data for key in ("source_tables", "attribute_column", "filter")):
+            raise ValueError("Missing data in response")
+
+        return {"source_tables": output_data["source_tables"],
+                "attribute_column": output_data["attribute_column"],
+                "filter": output_data["filter"]}
+    except Exception as e:
+        # Handle exceptions and display informative message
+        st.error(f"Error parsing SQL: {e}")
+        return None
+
+# Streamlit application logic
+st.title("SQL Query Analysis")
+
+uploaded_file = st.file_uploader("Upload SQL file:", type=["txt"])
+
+if uploaded_file:
+    # Read uploaded file
+    sql_queries = [uploaded_file.read().decode("utf-8")]
+
+    # Initialize empty DataFrame for parsed data
+    parsed_data = pd.DataFrame(columns=["Query", "Source_Table", "Attribute/Column", "Filter"])
+
+    # Parse each query and append data to DataFrame
+    for query in sql_queries:
+        parsed_elements = parse_sql(query)
+        if parsed_elements:
+            for source_table in parsed_elements["source_tables"]:
+                for attribute_column in parsed_elements["attribute_column"]:
+                    for filter in parsed_elements["filter"]:
+                        parsed_data = parsed_data.append(
+                            {
+                                "Query": query,
+                                "Source_Table": source_table,
+                                "Attribute/Column": attribute_column,
+                                "Filter": filter,
+                            },
+                            ignore_index=True,
+                        )
+
+    # Display parsed data in Streamlit table
+    st.dataframe(parsed_data)
+
+    # Download parsed data as spreadsheet
+    def download_spreadsheet():
+        wb = openpyxl.Workbook()
+        sheet = wb.active
+        sheet.append(["Query", "Source_Table", "Attribute/Column", "Filter"])
+
+        for index, row in parsed_data.iterrows():
+            sheet.append(row.to_list())
+
+        # Save and download spreadsheet
+        filename = "parsed_data.xlsx"
+        wb.save(filename)
+        with open(filename, "rb") as f:
+            st.
+
